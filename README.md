@@ -23,12 +23,18 @@ remainder mod p implies a nonzero remainder over ℤ as well. The
 only remaining concern is that Berlekamp–Massey might have
 returned a degenerate divisor of the true minimum polynomial at a
 "bad" prime (probability at most deg/p, roughly 10⁻⁵ for our
-inputs). To guard against this, `simulate_count` could be
-recompiled with a second prime (`-DMODP=1000000009ULL`) and rerun;
-both verdicts agreeing pushes the residual error below 10⁻⁹. In
-practice the BM polynomial can also be checked directly: it should
-annihilate the entire input sequence as a linear recurrence; if it
-does, BM did not lose any factors.
+inputs).
+
+The repository contains a small tool, `verify_bm`, that detects
+this: it applies the BM polynomial as a linear recurrence to the
+exact integer values produced by Knuth's bignum `dynaham` (which
+the `./tools/build_truth.sh` script obtains by downloading and
+running Knuth's source unmodified) and checks that every
+testable position evaluates to zero modulo p. If even one
+position fails, BM lost a factor. For our run, all 40 365
+testable positions evaluate to zero, confirming the BM polynomial
+is exactly the integer minimum polynomial reduced mod p — not a
+degenerate factor.
 
 The 24,635-degree remainder is not a near-miss but a fully
 populated nonzero polynomial.
@@ -191,14 +197,21 @@ rerun the pipeline; both verdicts should agree.
 
 We measured a Mersenne candidate, 2³¹ − 1 = 2147483647, on the
 same hardware as a curiosity. It is actually *slower* than
-10⁹ + 7 — about 8% slower on `simulate_count`, 67% slower on
-`divtest`. The reason is that GCC compiles `% 1000000007` into a
-four-instruction Barrett reduction (one wide mul, one shift, one
-narrow mul, one sub), while `% 2147483647` does not simplify to
-the obvious Mersenne fast path; the compiler emits a longer
-sequence instead. So unless one writes the Mersenne reduction by
-hand, 10⁹ + 7 wins outright. The choice is not material to the
-verdicts either way.
+10⁹ + 7 in both the compiler-generic case and the hand-coded case
+(see below); the choice is not material to the verdicts either way.
+
+| operation                          | p = 10⁹+7 | p = 2³¹−1 hand | slowdown |
+|------------------------------------|-----------|----------------|----------|
+| simulate_count OPEN 1000 iters (1 thread) | 10.19 ms/iter | 10.45 ms/iter | 2.5%   |
+| simulate_count CLOSED 5000 iters         | 1.08 ms/iter  | 1.18 ms/iter | 9%     |
+| divtest Q³ ÷ Q⁺                          | 0.66 s        | 1.09 s       | 65%    |
+
+GCC compiles `% 1000000007` into a four-instruction Barrett
+reduction (one wide `mul`, one shift, one narrow `mul`, one
+`sub`), branch-free. The hand-written Mersenne fast reduction
+needs two rounds of `(lo + hi)` plus a final correction, which
+adds up to seven instructions and a conditional branch. On this
+Ice Lake Xeon the compiler's Barrett wins outright.
 
 ## Author
 
