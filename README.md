@@ -163,8 +163,8 @@ prime can be checked simply by recompiling.
 
 ## Author
 
-Shisheng Li ⟨wanmengnemo@gmail.com⟩, with implementation assistance
-from Claude (Anthropic), May 2026.
+Shisheng Li, with implementation assistance from Claude (Anthropic),
+May 2026.
 
 This work rests entirely on Knuth's DYNAHAM. The contribution of
 this repository is the observation that DYNAHAM's transition
