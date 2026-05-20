@@ -20,9 +20,15 @@ mv dynaham.c  dynaham_modp_dumpT.c
 mv dynahamp.c dynahamp_modp_dumpT.c
 
 echo ""
+# Pick up locally-built SGB if present, else fall back to system libgb.
+if [ -f ../ext/sgb/libgb.a ]; then
+    SGB_FLAGS="-I ../ext/sgb ../ext/sgb/libgb.a"
+else
+    SGB_FLAGS="-lgb"
+fi
 echo "Building..."
-cc -O2 -mcmodel=large dynaham_modp_dumpT.c  -lgb -o dynaham_modp_dumpT
-cc -O2 -mcmodel=large dynahamp_modp_dumpT.c -lgb -o dynahamp_modp_dumpT
+cc -O2 -mcmodel=large dynaham_modp_dumpT.c  $SGB_FLAGS -o dynaham_modp_dumpT
+cc -O2 -mcmodel=large dynahamp_modp_dumpT.c $SGB_FLAGS -o dynahamp_modp_dumpT
 
 cd ..
 

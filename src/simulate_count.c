@@ -1,7 +1,6 @@
 /*11:*/
 #line 175 "simulate_count.w"
 
-#define _GNU_SOURCE
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <string.h> 

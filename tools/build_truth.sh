@@ -11,15 +11,22 @@ echo "=== ctangle Knuth's bignum dynaham ==="
 ctangle dynaham.w > /dev/null
 echo ""
 
+# Pick up locally-built SGB if present, else fall back to system libgb.
+if [ -f ../ext/sgb/libgb.a ]; then
+    SGB_FLAGS="-I ../ext/sgb ../ext/sgb/libgb.a"
+else
+    SGB_FLAGS="-lgb"
+fi
+
 echo "=== build Knuth's bignum dynaham (closed) ==="
-cc -O2 -mcmodel=large dynaham.c -lgb -o dynaham_truth
+cc -O2 -mcmodel=large dynaham.c $SGB_FLAGS -o dynaham_truth
 echo ""
 
 echo "=== ctangle Knuth's bignum dynahamp ==="
 ctangle dynahamp.w > /dev/null
 
 echo "=== build Knuth's bignum dynahamp (open) ==="
-cc -O2 -mcmodel=large dynahamp.c -lgb -o dynahamp_truth
+cc -O2 -mcmodel=large dynahamp.c $SGB_FLAGS -o dynahamp_truth
 echo ""
 
 cd ..

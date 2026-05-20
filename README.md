@@ -24,29 +24,32 @@ polynomial.
 For m = 5, Exercise 210's conjectured cube relation does not hold;
 the correct relation appears to be a *square*.
 
-## Quick verification (no compilation)
+## Quick verification (no external libraries)
 
 If you only want to confirm the divisibility verdict from the
 shipped polynomials:
 
 ```
-sudo apt-get install -y libflint-dev
 make divtest
 ./divtest data/Q5_closed.txt data/Q5_open.txt 1   # DIVISIBLE
 ./divtest data/Q5_closed.txt data/Q5_open.txt 2   # DIVISIBLE
 ./divtest data/Q5_closed.txt data/Q5_open.txt 3   # NOT DIVISIBLE
 ```
 
-Total time: under 1 second.
+`divtest` is a self-contained 180-line C program; no third-party
+libraries are required. Total time: under 1 second.
 
 ## Full pipeline from scratch (~3 minutes on 16 cores)
 
 ```
-sudo apt-get install -y libgb-dev libflint-dev   # dependencies
-./tools/build_patched.sh                          # downloads Knuth's source, patches it
-make                                              # builds our tools
-./run.sh                                          # full pipeline
+./tools/install_sgb.sh        # download + build Stanford GraphBase locally
+./tools/build_patched.sh      # download Knuth's dynaham.w + apply patches + build
+make                          # build our tools
+./run.sh                      # full pipeline
 ```
+
+No system packages are required; `install_sgb.sh` builds Stanford
+GraphBase into `ext/sgb/` and the Makefile picks it up automatically.
 
 `run.sh` performs:
 
@@ -143,12 +146,22 @@ multiplications, only additions mod p.
 
 ## Dependencies
 
-- C99 compiler (gcc or clang)
-- `libgb` — Stanford GraphBase, for graph storage (`apt install libgb-dev`)
-- `libflint` — Fast Library for Number Theory (`apt install libflint-dev`)
-- `cweb` — `ctangle` from CWEB (`apt install cweb`)
-- An OpenMP-capable compiler (optional; without OpenMP the
-  simulator runs single-threaded, about 8× slower)
+- C99 compiler (gcc or clang) and `make`
+- `ctangle` from CWEB
+  (Linux: `apt install cweb`; macOS: `brew install cweb`)
+- An OpenMP-capable compiler (optional; without OpenMP the simulator
+  runs single-threaded, about 8× slower)
+
+Stanford GraphBase is fetched and built by `./tools/install_sgb.sh`;
+no system package is needed.
+
+macOS notes:
+
+- Apple's bundled clang does not include OpenMP. Install it with
+  `brew install libomp`, then run
+  `make OMP="-Xpreprocessor -fopenmp -lomp"`.
+- The Makefile auto-detects Linux x86_64 vs everything else and
+  applies `-mcmodel=large` only where it is meaningful.
 
 ## Second-prime cross-check
 
