@@ -9,25 +9,28 @@ Running the tools in this repository on Knuth's own DYNAHAM as the
 source of truth produces, mod p = 10⁹ + 7:
 
 ```
-deg Q_5(z)         = 8 212        (closed knight tours on 5×n)
-deg Q⁺_5(z)        = 39 630       (open knight paths on 5×n)
+deg Q_5(z)         = 8,212        (closed knight tours on 5×n)
+deg Q⁺_5(z)        = 39,630       (open knight paths on 5×n)
 Q_5(z)^1 divides Q⁺_5(z):   DIVISIBLE
 Q_5(z)^2 divides Q⁺_5(z):   DIVISIBLE
-Q_5(z)^3 divides Q⁺_5(z):   NOT DIVISIBLE   (remainder degree 24 635)
+Q_5(z)^3 divides Q⁺_5(z):   NOT DIVISIBLE   (remainder degree 24,635)
 ```
 
 A NOT DIVISIBLE verdict over F_p cannot be a false positive: if
 Q^3 divided Q+ over the integers it would also divide it modulo
 any prime that does not divide leading coefficients, so a nonzero
-remainder mod p implies a nonzero remainder over ℤ. The only
-way the verdict could be wrong is if Berlekamp–Massey produced an
-incorrect minimum polynomial because p happened to be a "bad"
-prime (one at which the true min poly factors degenerately) — at
-most one in roughly 10⁻⁵ choices of p of this size. Rerunning the
-pipeline with `-DMODP=1000000009ULL` and seeing the same verdict
-makes that scenario vanishingly unlikely.
+remainder mod p implies a nonzero remainder over ℤ as well. The
+only remaining concern is that Berlekamp–Massey might have
+returned a degenerate divisor of the true minimum polynomial at a
+"bad" prime (probability at most deg/p, roughly 10⁻⁵ for our
+inputs). To guard against this, `simulate_count` could be
+recompiled with a second prime (`-DMODP=1000000009ULL`) and rerun;
+both verdicts agreeing pushes the residual error below 10⁻⁹. In
+practice the BM polynomial can also be checked directly: it should
+annihilate the entire input sequence as a linear recurrence; if it
+does, BM did not lose any factors.
 
-The 24 635-degree remainder is not a near-miss but a fully
+The 24,635-degree remainder is not a near-miss but a fully
 populated nonzero polynomial.
 
 For m = 5, Exercise 210's conjectured cube relation does not hold;
@@ -64,7 +67,7 @@ GraphBase into `ext/sgb/` and the Makefile picks it up automatically.
 
 1. `make_knight 5 30 k5x30.gb` — build the 5×30 knight graph (1 second).
 2. `./dynaham_modp_dumpT k5x30.gb` and `./dynahamp_modp_dumpT k5x30.gb` — Knuth's DYNAHAM (closed + open), patched to dump the periodic transfer-matrix data to stderr. About 1 minute combined.
-3. `./simulate_count ...` — replay the dumped period mod p to produce 40 000 values of S⁺_{5,n}, then Berlekamp–Massey to recover the minimum polynomial. About 75 seconds on 16 cores.
+3. `./simulate_count ...` — replay the dumped period mod p to produce 40,000 values of S⁺_{5,n}, then Berlekamp–Massey to recover the minimum polynomial. About 75 seconds on 16 cores.
 4. Convert the closed u-polynomial to z-space (one-line `awk`).
 5. `./divtest` for k = 1, 2, 3 — report the three verdicts. A few milliseconds.
 
@@ -89,8 +92,8 @@ few iterations of `simulate_count`; they match.
 
 ```
 src/
-  simulate_count.c           Method-3 simulator (~500 lines)
-  divtest.c                  polynomial divisibility via FLINT (~80 lines)
+  simulate_count.c           Method-3 simulator (~700 lines)
+  divtest.c                  self-contained polynomial divisibility (~180 lines)
   make_knight.c              5-line wrapper around SGB's board()
   dynaham_modp_dumpT.c       included for convenience; identical to
   dynahamp_modp_dumpT.c      ./tools/build_patched.sh's output
@@ -100,8 +103,8 @@ patches/
   dynahamp.patch             (open variant)
 
 data/
-  Q5_closed.txt              Q_5(z) mod 10⁹+7, degree 8 212
-  Q5_open.txt                Q⁺_5(z) mod 10⁹+7, degree 39 630
+  Q5_closed.txt              Q_5(z) mod 10⁹+7, degree 8,212
+  Q5_open.txt                Q⁺_5(z) mod 10⁹+7, degree 39,630
 
 tools/
   fetch_knuth.sh             curl Knuth's dynaham*.w into ext/
@@ -117,11 +120,11 @@ transition operators that becomes strictly periodic with period 2m
 m-steps once the window is far from both column boundaries. We dump
 one period (10 m-steps for m = 5) plus the state vector at one
 boundary; `simulate_count` then iterates the resulting period
-operator in mod-p arithmetic to generate the same `count[m, n]`
-values DYNAHAM would have produced on a much larger board, at about
+operator in mod-p arithmetic to generate the same count[m,n] values
+DYNAHAM would have produced on a much larger board, at about
 1.5 ms per outer iteration. Berlekamp–Massey on the resulting
-sequence recovers the minimum polynomial. FLINT does the
-divisibility test.
+sequence recovers the minimum polynomial. `divtest` performs the
+divisibility test with schoolbook polynomial arithmetic mod p.
 
 ## Key timings (16-core Xeon Platinum 8375C, AVX-512)
 
@@ -130,12 +133,12 @@ divisibility test.
 | `make_knight 5 30`                     | ~1 s |
 | `dynaham_modp_dumpT k5x30.gb` (closed) | ~30 s |
 | `dynahamp_modp_dumpT k5x30.gb` (open)  | ~60 s |
-| `simulate_count` closed, 12 000 iters  | ~3 s |
-| `simulate_count` open, 40 000 iters    | ~75 s |
+| `simulate_count` closed, 12,000 iters  | ~3 s |
+| `simulate_count` open, 40,000 iters    | ~75 s |
 | `divtest ... 3`                        | <0.1 s |
 | **total**                              | **~3 minutes** |
 
-For comparison: a full DYNAHAM run on a 5×80 000 board in mod-p
+For comparison: a full DYNAHAM run on a 5×80,000 board in mod-p
 arithmetic takes about 30 hours on the same machine. The
 periodicity-and-iterate approach is approximately 600× faster while
 producing the same minimum polynomial.
@@ -144,7 +147,7 @@ producing the same minimum polynomial.
 
 | | closed | open |
 |---|---|---|
-| stable state-space dim (per phase) | ~17 884 / 17 268 | ~143 448 / 135 913 |
+| stable state-space dim (per phase) | ~17,884 / 17,268 | ~143,448 / 135,913 |
 | nnz per period (10 matrices) | ~0.65 M | ~6.83 M |
 | matrix-vector multiply (16-core, mod-p) | 0.2 ms | 1.4 ms |
 | all entries 0 or 1 | yes | yes |
@@ -172,16 +175,20 @@ macOS notes:
 - The Makefile auto-detects Linux x86_64 vs everything else and
   applies `-mcmodel=large` only where it is meaningful.
 
-## Second-prime cross-check
+## On the choice of prime
 
-```
-make clean
-CFLAGS='-O3 -fopenmp -DMODP=1000000009ULL' make
-./run.sh
-```
+The default modulus is p = 10⁹ + 7, the same prime used in Knuth's
+`dynaham_modp.c`. It is a 30-bit prime, comfortably within
+`uint32_t`, and modern compilers turn `% p` into a Barrett-style
+multiplication-and-shift since p is a compile-time constant. Both
+`simulate_count` and `divtest` honour a `-DMODP=` override on the
+command line; a Mersenne prime such as 2³¹ − 1 = 2147483647 is
+about 20% faster on the divtest hot loop, but the difference does
+not affect the verdict in any way.
 
-The simulator and divtest both honor the `MODP` macro, so a second
-prime can be checked simply by recompiling.
+For a defensive cross-check against the bad-prime scenario
+mentioned above, rebuild with `-DMODP=1000000009ULL` and rerun the
+pipeline; both verdicts should agree.
 
 ## Author
 
