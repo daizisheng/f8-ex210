@@ -1,0 +1,172 @@
+# TAOCP Pre-Fascicle 8A, Exercise 210 — empirical investigation for m=5
+
+> "Prove or disprove that Q⁺ₘ(z) is a multiple of Qₘ(z)³ when m ≥ 5."
+> — Donald Knuth, *TAOCP* Pre-Fascicle 8A, Exercise 210 [HM46]
+
+## What this repository finds
+
+Running the tools in this repository on Knuth's own DYNAHAM as the
+source of truth produces, mod p = 10⁹ + 7:
+
+```
+deg Q_5(z)         = 8 212        (closed knight tours on 5×n)
+deg Q⁺_5(z)        = 39 630       (open knight paths on 5×n)
+Q_5(z)^1 divides Q⁺_5(z):   DIVISIBLE
+Q_5(z)^2 divides Q⁺_5(z):   DIVISIBLE
+Q_5(z)^3 divides Q⁺_5(z):   NOT DIVISIBLE   (remainder degree 24 635)
+```
+
+The same verdict holds mod 10⁹ + 9 (rerun with `-DMODP=1000000009ULL`),
+so the joint false-alarm rate is below 10⁻¹⁵. The 24 635-degree
+remainder is not a near-miss but a fully populated nonzero
+polynomial.
+
+For m = 5, Exercise 210's conjectured cube relation does not hold;
+the correct relation appears to be a *square*.
+
+## Quick verification (no compilation)
+
+If you only want to confirm the divisibility verdict from the
+shipped polynomials:
+
+```
+sudo apt-get install -y libflint-dev
+make divtest
+./divtest data/Q5_closed.txt data/Q5_open.txt 1   # DIVISIBLE
+./divtest data/Q5_closed.txt data/Q5_open.txt 2   # DIVISIBLE
+./divtest data/Q5_closed.txt data/Q5_open.txt 3   # NOT DIVISIBLE
+```
+
+Total time: under 1 second.
+
+## Full pipeline from scratch (~3 minutes on 16 cores)
+
+```
+sudo apt-get install -y libgb-dev libflint-dev   # dependencies
+./tools/build_patched.sh                          # downloads Knuth's source, patches it
+make                                              # builds our tools
+./run.sh                                          # full pipeline
+```
+
+`run.sh` performs:
+
+1. `make_knight 5 30 k5x30.gb` — build the 5×30 knight graph (1 second).
+2. `./dynaham_modp_dumpT k5x30.gb` and `./dynahamp_modp_dumpT k5x30.gb` — Knuth's DYNAHAM (closed + open), patched to dump the periodic transfer-matrix data to stderr. About 1 minute combined.
+3. `./simulate_count ...` — replay the dumped period mod p to produce 40 000 values of S⁺_{5,n}, then Berlekamp–Massey to recover the minimum polynomial. About 75 seconds on 16 cores.
+4. Convert the closed u-polynomial to z-space (one-line `awk`).
+5. `./divtest` for k = 1, 2, 3 — report the three verdicts. A few milliseconds.
+
+## Independent ground-truth cross-check
+
+If you want to convince yourself the simulator is producing the
+same values DYNAHAM would produce, run
+
+```
+./tools/build_truth.sh
+```
+
+This downloads Knuth's `dynaham.w` and `dynahamp.w` from
+`cs.stanford.edu/~knuth/programs/`, ctangles them *unmodified*,
+builds the bignum versions, and runs each on a 5×10 board to print
+exact integer values of S_{5,n} and S⁺_{5,n} for n = 2..10.
+
+These values can be reduced mod 10⁹+7 and compared with the first
+few iterations of `simulate_count`; they match.
+
+## Repository layout
+
+```
+src/
+  simulate_count.c           Method-3 simulator (~500 lines)
+  divtest.c                  polynomial divisibility via FLINT (~80 lines)
+  make_knight.c              5-line wrapper around SGB's board()
+  dynaham_modp_dumpT.c       included for convenience; identical to
+  dynahamp_modp_dumpT.c      ./tools/build_patched.sh's output
+
+patches/
+  dynaham.patch              unified diff applied to ctangle(dynaham.w)
+  dynahamp.patch             (open variant)
+
+data/
+  Q5_closed.txt              Q_5(z) mod 10⁹+7, degree 8 212
+  Q5_open.txt                Q⁺_5(z) mod 10⁹+7, degree 39 630
+
+tools/
+  fetch_knuth.sh             curl Knuth's dynaham*.w into ext/
+  build_truth.sh             ctangle + build Knuth's UNPATCHED dynaham, run on 5×10
+  build_patched.sh           ctangle + apply patches + build patched binaries
+```
+
+## Method summary (one paragraph)
+
+DYNAHAM, when sweeping its sliding window through the interior of an
+infinite m × ∞ knight strip, produces a sequence of per-vertex
+transition operators that becomes strictly periodic with period 2m
+m-steps once the window is far from both column boundaries. We dump
+one period (10 m-steps for m = 5) plus the state vector at one
+boundary; `simulate_count` then iterates the resulting period
+operator in mod-p arithmetic to generate the same `count[m, n]`
+values DYNAHAM would have produced on a much larger board, at about
+1.5 ms per outer iteration. Berlekamp–Massey on the resulting
+sequence recovers the minimum polynomial. FLINT does the
+divisibility test.
+
+## Key timings (16-core Xeon Platinum 8375C, AVX-512)
+
+| Stage                                  | Wall time |
+|----------------------------------------|-----------|
+| `make_knight 5 30`                     | ~1 s |
+| `dynaham_modp_dumpT k5x30.gb` (closed) | ~30 s |
+| `dynahamp_modp_dumpT k5x30.gb` (open)  | ~60 s |
+| `simulate_count` closed, 12 000 iters  | ~3 s |
+| `simulate_count` open, 40 000 iters    | ~75 s |
+| `divtest ... 3`                        | <0.1 s |
+| **total**                              | **~3 minutes** |
+
+For comparison: a full DYNAHAM run on a 5×80 000 board in mod-p
+arithmetic takes about 30 hours on the same machine. The
+periodicity-and-iterate approach is approximately 600× faster while
+producing the same minimum polynomial.
+
+## Matrix structure (informational)
+
+| | closed | open |
+|---|---|---|
+| stable state-space dim (per phase) | ~17 884 / 17 268 | ~143 448 / 135 913 |
+| nnz per period (10 matrices) | ~0.65 M | ~6.83 M |
+| matrix-vector multiply (16-core, mod-p) | 0.2 ms | 1.4 ms |
+| all entries 0 or 1 | yes | yes |
+
+The transition matrices are *binary*: every nonzero entry is 1.
+This is why `bin_csc_apply` in `simulate_count.c` has no
+multiplications, only additions mod p.
+
+## Dependencies
+
+- C99 compiler (gcc or clang)
+- `libgb` — Stanford GraphBase, for graph storage (`apt install libgb-dev`)
+- `libflint` — Fast Library for Number Theory (`apt install libflint-dev`)
+- `cweb` — `ctangle` from CWEB (`apt install cweb`)
+- An OpenMP-capable compiler (optional; without OpenMP the
+  simulator runs single-threaded, about 8× slower)
+
+## Second-prime cross-check
+
+```
+make clean
+CFLAGS='-O3 -fopenmp -DMODP=1000000009ULL' make
+./run.sh
+```
+
+The simulator and divtest both honor the `MODP` macro, so a second
+prime can be checked simply by recompiling.
+
+## Author
+
+Shisheng Li ⟨wanmengnemo@gmail.com⟩, with implementation assistance
+from Claude (Anthropic), May 2026.
+
+This work rests entirely on Knuth's DYNAHAM. The contribution of
+this repository is the observation that DYNAHAM's transition
+matrix sequence is exactly periodic in the stable interior, plus
+the small toolkit needed to act on that observation.

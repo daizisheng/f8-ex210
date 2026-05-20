@@ -1,0 +1,129 @@
+--- dynahamp.c	2026-05-20 17:42:23.632627470 +0800
++++ /home/ubuntu/knuth/f8-ex210/src/dynahamp_modp_dumpT.c	2026-05-20 17:34:47.615183868 +0800
+@@ -1,12 +1,15 @@
+-#define precision 100
++#define precision 18
+ #define progress_mask 0x1fffff
+-#define maxn 300 \
++#define maxn 2000000 \
+ 
+ #define radix 1000000000000000000LL
++#define MODP 1000000007LL
++#define STABLE_LOW 30
++#define STABLE_HIGH 41
+ #define maxprec ((precision+17) /18)  \
+ 
+-#define memsize 3000000000LL
+-#define wtsize 1000000000LL
++#define memsize 1000000000LL
++#define wtsize 10000000LL
+ #define oldmemsize 450000000
+ #define deg 10 \
+ 
+@@ -93,61 +96,28 @@
+ #line 165 "dynahamp.w"
+ 
+ void add_to_bignum(bignum*x,bignum delta){
+-register int c,k;
+-register long long s;
+-for(c= k= 0;k<prec;k++){
+-s= x->val[k]+delta.val[k]+c;
+-if(s>=radix)c= 1,x->val[k]= s-radix;
+-else c= 0,x->val[k]= s;
+-}
+-if(c){
+-if(prec==maxprec)/*10:*/
+-#line 205 "dynahamp.w"
+-
+-{
+-fprintf(stderr,"\nSorry, I can't handle numbers bigger than 10^%d!\n",
+-18*maxprec);
+-fprintf(stderr,"I had found %lld classes of %d-configs so far.\n",
+-wtptr,m);
+-exit(-999);
++  x->val[0] = (x->val[0] + delta.val[0]) % MODP;
+ }
+ 
+-/*:10*/
+-#line 175 "dynahamp.w"
+-;
+-prec++;
+-x->val[k]= c;
+-}
+-}
+ 
+ /*:7*//*8:*/
+ #line 181 "dynahamp.w"
+ 
+ int bignum_comp(bignum x,bignum y){
+-register int k,r= 0;
+-for(k= 0;k<prec;k++)if(x.val[k]!=y.val[k])
+-r= (x.val[k]<y.val[k]?-1:+1);
+-return r;
++  if (x.val[0] < y.val[0]) return -1;
++  if (x.val[0] > y.val[0]) return 1;
++  return 0;
+ }
+ 
++
+ /*:8*//*9:*/
+ #line 189 "dynahamp.w"
+ 
+ void print_bignum(FILE*stream,bignum x){
+-register int k;
+-for(k= prec-1;k>=0&&x.val[k]==0;k--);
+-if(k<0)fprintf(stream,"0");
+-else{
+-fprintf(stream,"%lld",
+-x.val[k]);
+-while(k> 0){
+-k--;
+-fprintf(stream,"%018lld",
+-x.val[k]);
+-}
+-}
++  fprintf(stream, "%lld", x.val[0]);
+ }
+ 
++
+ /*:9*//*15:*/
+ #line 386 "dynahamp.w"
+ 
+@@ -252,6 +222,13 @@
+ #line 805 "dynahamp.w"
+ ;
+ p= trielookup();
++if (m >= STABLE_LOW && m <= STABLE_HIGH) {
++    fprintf(stderr, "T m=%d old=", m);
++    for (int _l = 0; _l < oldq; _l++) fputc(encode(oldcode[_l]), stderr);
++    fprintf(stderr, " new=");
++    for (int _l = 0; _l < q; _l++) fputc(encode(code[_l]), stderr);
++    fputc('\n', stderr);
++}
+ add_to_bignum(&weight[p],oldweight[oldp]);
+ contribs++;
+ }
+@@ -299,6 +276,11 @@
+ print_bignum(stderr,oldweight[oldp]);
+ fprintf(stderr," to a %d-path.\n",
+ m+k-2);
++if (m >= STABLE_LOW && m <= STABLE_HIGH) {
++    fprintf(stderr, "C m=%d cycle_at=%d old=", m, m+k-2);
++    for (int _l = 0; _l < oldq; _l++) fputc(encode(oldcode[_l]), stderr);
++    fputc('\n', stderr);
++}
+ add_to_bignum(&count[m+k-2],oldweight[oldp]);
+ }
+ return 0;
+@@ -384,6 +366,11 @@
+ register int i,j,k,ii,kk,kkk;
+ register unsigned long long bits;
+ if(l==oldq){
++if (m >= STABLE_LOW && m <= STABLE_HIGH + 1) {
++    fprintf(stderr, "W m=%d oldp=%u code=", m-1, oldp);
++    for (int _l = 0; _l < oldq; _l++) fputc(encode(oldcode[_l]), stderr);
++    fprintf(stderr, " w=%lld\n", oldweight[oldp].val[0]);
++}
+ /*47:*/
+ #line 960 "dynahamp.w"
+ 

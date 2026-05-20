@@ -1,0 +1,24 @@
+# Build artifacts
+simulate_count
+divtest
+make_knight
+dynaham_modp_dumpT
+dynahamp_modp_dumpT
+
+# Generated graphs and logs
+*.gb
+*.log
+
+# Knuth's downloaded sources (re-fetched by tools/)
+ext/
+
+# Pipeline outputs
+Q5_tilde.txt
+Q5_closed.txt
+Q5_open.txt
+!data/Q5_closed.txt
+!data/Q5_open.txt
+
+# Editor/OS junk
+*.swp
+.DS_Store
