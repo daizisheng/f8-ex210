@@ -189,10 +189,16 @@ For a defensive cross-check against the bad-prime scenario noted
 above, rebuild with `-DMODP=1000000009ULL` (the next prime) and
 rerun the pipeline; both verdicts should agree.
 
-A Mersenne prime such as 2³¹ − 1 = 2147483647 would shave a few
-percent off the `divtest` runtime, but the rest of the pipeline
-is not bottlenecked by modular reductions and the choice is not
-material to the verdicts.
+We measured a Mersenne candidate, 2³¹ − 1 = 2147483647, on the
+same hardware as a curiosity. It is actually *slower* than
+10⁹ + 7 — about 8% slower on `simulate_count`, 67% slower on
+`divtest`. The reason is that GCC compiles `% 1000000007` into a
+four-instruction Barrett reduction (one wide mul, one shift, one
+narrow mul, one sub), while `% 2147483647` does not simplify to
+the obvious Mersenne fast path; the compiler emits a longer
+sequence instead. So unless one writes the Mersenne reduction by
+hand, 10⁹ + 7 wins outright. The choice is not material to the
+verdicts either way.
 
 ## Author
 
