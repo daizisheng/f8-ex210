@@ -16,10 +16,19 @@ Q_5(z)^2 divides Q⁺_5(z):   DIVISIBLE
 Q_5(z)^3 divides Q⁺_5(z):   NOT DIVISIBLE   (remainder degree 24 635)
 ```
 
-The same verdict holds mod 10⁹ + 9 (rerun with `-DMODP=1000000009ULL`),
-so the joint false-alarm rate is below 10⁻¹⁵. The 24 635-degree
-remainder is not a near-miss but a fully populated nonzero
-polynomial.
+A NOT DIVISIBLE verdict over F_p cannot be a false positive: if
+Q^3 divided Q+ over the integers it would also divide it modulo
+any prime that does not divide leading coefficients, so a nonzero
+remainder mod p implies a nonzero remainder over ℤ. The only
+way the verdict could be wrong is if Berlekamp–Massey produced an
+incorrect minimum polynomial because p happened to be a "bad"
+prime (one at which the true min poly factors degenerately) — at
+most one in roughly 10⁻⁵ choices of p of this size. Rerunning the
+pipeline with `-DMODP=1000000009ULL` and seeing the same verdict
+makes that scenario vanishingly unlikely.
+
+The 24 635-degree remainder is not a near-miss but a fully
+populated nonzero polynomial.
 
 For m = 5, Exercise 210's conjectured cube relation does not hold;
 the correct relation appears to be a *square*.
