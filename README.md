@@ -177,18 +177,22 @@ macOS notes:
 
 ## On the choice of prime
 
-The default modulus is p = 10⁹ + 7, the same prime used in Knuth's
-`dynaham_modp.c`. It is a 30-bit prime, comfortably within
-`uint32_t`, and modern compilers turn `% p` into a Barrett-style
-multiplication-and-shift since p is a compile-time constant. Both
-`simulate_count` and `divtest` honour a `-DMODP=` override on the
-command line; a Mersenne prime such as 2³¹ − 1 = 2147483647 is
-about 20% faster on the divtest hot loop, but the difference does
-not affect the verdict in any way.
+The default modulus is p = 10⁹ + 7, a 30-bit prime in common use
+in competitive programming and number theory. It is large enough
+to make accidental collisions astronomically unlikely yet small
+enough that `uint32_t` storage and `uint64_t` accumulation are
+sufficient. Modern C compilers turn `% p` into a multiplication
+and shift since p is known at compile time.
 
-For a defensive cross-check against the bad-prime scenario
-mentioned above, rebuild with `-DMODP=1000000009ULL` and rerun the
-pipeline; both verdicts should agree.
+`simulate_count` and `divtest` both honour a `-DMODP=` override.
+For a defensive cross-check against the bad-prime scenario noted
+above, rebuild with `-DMODP=1000000009ULL` (the next prime) and
+rerun the pipeline; both verdicts should agree.
+
+A Mersenne prime such as 2³¹ − 1 = 2147483647 would shave a few
+percent off the `divtest` runtime, but the rest of the pipeline
+is not bottlenecked by modular reductions and the choice is not
+material to the verdicts.
 
 ## Author
 
